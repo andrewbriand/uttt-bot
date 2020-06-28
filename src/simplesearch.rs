@@ -9,11 +9,13 @@ pub struct SimpleSearchAI {
 }
 
 impl AI for SimpleSearchAI {
-
-    fn get_move(&mut self, last_move: i64) -> i64 {
-        if last_move != -1 {
-            self.board.make_move(1 << last_move);
+    fn make_move(&mut self, m: i64) {
+        if m != -1 {
+            self.board.make_move(1 << m);
         }
+    }
+
+    fn get_move(&mut self) -> i64 {
         self.me = self.board.to_move;
         let alpha = -100000000;
         let beta = 100000000;

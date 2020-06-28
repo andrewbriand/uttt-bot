@@ -1,9 +1,13 @@
 pub trait AI {
     // returns the move the AI wants to make
-    // given that the last move was last_move
-    // last_move should be -1 if this is the first move of the game
-    // get_move returns -1 if the ai wants to resign
-    fn get_move(&mut self, last_move : i64) -> i64;
+    // and makes the move on its internal board representation
+    // given the current board state based on previous
+    // calls to make_move
+    fn get_move(&mut self) -> i64;
+
+    // Tell the ai to make the passed move on its internal 
+    // board representation
+    fn make_move(&mut self, m: i64);
 
     fn cleanup(&mut self);
 }
