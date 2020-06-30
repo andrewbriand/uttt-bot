@@ -8,6 +8,8 @@ mod bitboard;
 
 use text_io::read;
 
+use std::time::Duration;
+
 
 fn main() {
     let mut curr_ai : Box<dyn AI> = 
@@ -30,7 +32,10 @@ fn main() {
         } else if cmd == "search".to_string() {
             subcmd = read!();
             if subcmd == "free".to_string() {
-                println!("info best_move={}", curr_ai.get_move());
+                let xtime: u64 = read!();
+                let otime: u64 = read!();
+                println!("info best_move={}", curr_ai.get_move(Duration::from_millis(xtime),
+                                              Duration::from_millis(otime)));
             }
         }
     }

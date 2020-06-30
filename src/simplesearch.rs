@@ -1,6 +1,8 @@
 use crate::ai::AI;
 use crate::bitboard::BitBoard;
 
+use std::time::{Duration, Instant};
+
 pub struct SimpleSearchAI {
     board: BitBoard,
     eval: Box<dyn Fn(&mut BitBoard, i8) -> i32>,
@@ -15,12 +17,30 @@ impl AI for SimpleSearchAI {
         }
     }
 
-    fn get_move(&mut self) -> i64 {
+    fn get_move(&mut self, xtime: Duration, otime: Duration) -> i64 {
+        let mut result_move = -1;
+        let mut next_depth_estimate: Duration = Duration::from_millis(0);
         self.me = self.board.to_move;
-        let alpha = -100000000;
-        let beta = 100000000;
-        let (result_move, result_score) = self.search(&mut self.board.clone(), self.depth, alpha, beta);
-        //println!("result score: {}", result_score);
+        let mut total_time = Duration::from_millis(5000);
+        let mut depth = 1;
+        while next_depth_estimate < total_time {
+            let alpha = -100000000;
+            let beta = 100000000;
+            let before = Instant::now();
+            let (next_result_move, next_result_score) = self.search(&mut self.board.clone(), depth, alpha, beta);
+            let search_time = Instant::now() - before;
+            next_depth_estimate = Duration::from_millis(search_time.as_millis() as u64 * search_time.as_millis() as u64);
+            result_move = next_result_move;
+            if next_result_score == 50000 || next_result_score == -50000 {
+                break;
+            }
+            if search_time < total_time {
+              total_time -= search_time;
+            } else {
+                break;
+            }
+            depth += 1;
+        }
         self.board.make_move(1 << result_move);
         return result_move;
     }
@@ -331,6 +351,8 @@ impl SimpleSearchAI {
                  return 50000;
               } else if board.get_winner() == -me {
                  return -50000;
+              } else if board.get_winner() == -2 {
+                return -50000;
               }
               let mut partial_credit;
               let mut result : i32 = 0;
