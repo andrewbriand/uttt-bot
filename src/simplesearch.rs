@@ -21,8 +21,8 @@ impl AI for SimpleSearchAI {
         let mut result_move = -1;
         let mut next_depth_estimate: Duration = Duration::from_millis(0);
         self.me = self.board.to_move;
-        let mut total_time = Duration::from_millis(5000);
-        let mut depth = 1;
+        let mut total_time = Duration::from_millis(90);
+        let mut depth = 4;
         while next_depth_estimate < total_time {
             let alpha = -100000000;
             let beta = 100000000;
@@ -113,7 +113,7 @@ impl SimpleSearchAI {
         return result;
     }
 
-    pub fn ab_then_mc(games: u64) -> Box<dyn Fn(&mut BitBoard, i8) -> i32> {
+    /*pub fn ab_then_mc(games: u64) -> Box<dyn Fn(&mut BitBoard, i8) -> i32> {
         Box::new(move |_board: &mut BitBoard, me: i8| -> i32 {
               if _board.get_winner() == me {
                  return 50000;
@@ -136,7 +136,7 @@ impl SimpleSearchAI {
               }
               return result;
         })
-    }
+    }*/
 
     pub fn abriand_eval_1() -> Box<dyn Fn(&mut BitBoard, i8) -> i32> {
         Box::new(move |board: &mut BitBoard, me: i8| -> i32 {
