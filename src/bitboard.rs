@@ -1,3 +1,8 @@
+use std::io;
+use std::time::{Duration, Instant};
+use std::thread;
+use core::arch::x86_64::_pdep_u64;
+
 static WIN_TABLE: [u64; 8] = [
     0xff80808080808080,
     0xfff0aa80faf0aa80,
@@ -153,25 +158,33 @@ impl BitBoard {
         return 127 - leading_zeros;
     }
 
-    /*pub fn random_move(moves: u128) -> u128 {
+    pub fn random_move(moves: u128) -> u128 {
         assert!(moves != 0);
          let m_lower_half: u64 = (moves & ((1 << 64) - 1)) as u64;
          let m_upper_half: u64 = (moves >> 64) as u64;
          let mut upper_popcnt: u64;
          let mut lower_popcnt: u64;
-         let upper_popcnt = m_upper_half.popcnt();
-         let lower_popcnt = m_lower_half.popcnt();
+         let upper_popcnt = m_upper_half.count_ones() as u64;
+         let lower_popcnt = m_lower_half.count_ones() as u64;
          let total_popcnt = upper_popcnt + lower_popcnt;
-         let mut n = rand::random::<u64>() % total_popcnt; 
+         let mut n = rand::random::<u64>() % (total_popcnt as u64); 
          if n < lower_popcnt {
-             let result = ((1 << n) as u64).pdep(m_lower_half);
-             return result as u128;
+             //let result = ((1 << n) as u64).pdep(m_lower_half);
+             unsafe {
+             let result = _pdep_u64(((1 as u64) << n) as u64, m_lower_half);
+              return result as u128;
+             }
+            
          } else {
              n -= lower_popcnt;
-             let result = ((1 << n) as u64).pdep(m_upper_half);
-             return (result as u128) << 64;
+            // let result = ((1 << n) as u64).pdep(m_upper_half);
+            unsafe {
+            let result = _pdep_u64(((1 as u64) << n) as u64, m_upper_half);
+            return (result as u128) << 64;
+            }
+             
          }
-    }*/
+    }
 
     pub fn iterate_moves(moves: u128, fun: &mut dyn FnMut(u128, i64) -> bool) {
          //let mut m_lower_half: u64 = (moves & ((1 << 64) - 1)) as u64;
