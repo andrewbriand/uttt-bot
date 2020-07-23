@@ -21,8 +21,8 @@ macro_rules! parse_input {
 
 
 fn main() {
-    //let mut curr_ai : Box<dyn AI> = Box::new(SimpleSearchAI::new(SimpleSearchAI::abriand_eval_1(), 8));
-    let mut curr_ai : Box<dyn AI> = Box::new(MCTSAI::new(0.1));
+    let mut curr_ai : Box<dyn AI> = Box::new(SimpleSearchAI::new(SimpleSearchAI::abriand_eval_1(), 8));
+    //let mut curr_ai : Box<dyn AI> = Box::new(;
     // game loop
     loop {
         let mut input_line = String::new();
@@ -35,18 +35,19 @@ fn main() {
                                + (opponent_row/3)*27 + 3*(opponent_row % 3));
 //            board.make_move((1 as u16) << (opponent_row*3 + opponent_col));
         }
-        let mut input_line = String::new();
-        io::stdin().read_line(&mut input_line).unwrap();
-        let valid_action_count = parse_input!(input_line, i32);
+        //let mut input_line = String::new();
+        //io::stdin().read_line(&mut input_line).unwrap();
+        //let valid_action_count = parse_input!(input_line, i32);
+        /*
         for i in 0..valid_action_count as usize {
             let mut input_line = String::new();
-            io::stdin().read_line(&mut input_line).unwrap();
+            //io::stdin().read_line(&mut input_line).unwrap();
            // let inputs = input_line.split(" ").collect::<Vec<_>>();
            // let row = parse_input!(inputs[0], i32);
            // let col = parse_input!(inputs[1], i32);
             
 
-        }
+        }*/
 
 
         let best_move = curr_ai.get_move(Duration::from_millis(0), Duration::from_millis(0));
