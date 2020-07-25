@@ -72,13 +72,13 @@ impl BitBoard {
     
     //#[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
     pub fn make_move(&mut self, m: u128) -> bool {
-        if m & self.next_legal == 0 {
-            return false;
-        }
+        //if m & self.next_legal == 0 {
+        //    return false;
+       // }
         let mut result = false;
         let mut tuple;
-        let mut leading_zeros : u64 = m.leading_zeros() as u64;
-        let space = 127 - leading_zeros;
+        //let mut leading_zeros : u64 = m.leading_zeros() as u64;
+        let space = m.trailing_zeros() as u64;
         let block_num = space / 9;
         let block_offset = space % 9;
         match self.to_move {
@@ -119,10 +119,14 @@ impl BitBoard {
         if self.o_occupancy & WINNER_MASK != 0 {
             return -1;
         }
-        if (((self.o_occupancy | self.x_occupancy) >> 81) & 0x1FF) == 0x1FF 
-           || self.get_moves() == 0 {
-            // draw
-            //eprintln!("draw found");
+        if self.get_moves() == 0 {
+            let o_blocks = ((self.o_occupancy >> 81) & 0x1FF).count_ones();
+            let x_blocks = ((self.x_occupancy >> 81) & 0x1FF).count_ones();
+            if (o_blocks > x_blocks) {
+                return -1;
+            } else if (x_blocks > o_blocks) {
+                return 1;
+            }
             return -2;
         }
         return 0;
@@ -144,34 +148,21 @@ impl BitBoard {
     }
 
     pub fn mask_to_sf(mask: u128) -> u64 {
-        let mut leading_zeros: u64;
-        let m_lower_half: u64 = (mask & ((1 << 64) - 1)) as u64;
-        let m_upper_half: u64 = (mask >> 64) as u64;
-        unsafe {
-            if m_upper_half == 0 {
-                leading_zeros = m_lower_half.leading_zeros() as u64;
-                leading_zeros += 64;
-            } else {
-                leading_zeros = m_upper_half.leading_zeros() as u64;
-            }
-        }
-        return 127 - leading_zeros;
+        return mask.trailing_zeros() as u64;
     }
 
     pub fn random_move(moves: u128) -> u128 {
         assert!(moves != 0);
          let m_lower_half: u64 = (moves & ((1 << 64) - 1)) as u64;
          let m_upper_half: u64 = (moves >> 64) as u64;
-         let mut upper_popcnt: u64;
-         let mut lower_popcnt: u64;
          let upper_popcnt = m_upper_half.count_ones() as u64;
          let lower_popcnt = m_lower_half.count_ones() as u64;
          let total_popcnt = upper_popcnt + lower_popcnt;
-         let mut n = rand::random::<u64>() % (total_popcnt as u64); 
+         let mut n = (rand::random::<u8>() as u64) % (total_popcnt as u64); 
          if n < lower_popcnt {
              //let result = ((1 << n) as u64).pdep(m_lower_half);
              unsafe {
-             let result = _pdep_u64(((1 as u64) << n) as u64, m_lower_half);
+              let result = _pdep_u64(((1 as u64) << n) as u64, m_lower_half);
               return result as u128;
              }
             
@@ -191,10 +182,10 @@ impl BitBoard {
          //let mut m_upper_half: u64 = (moves >> 64) as u64;
          let mut m_mut = moves;
          while m_mut != 0 {
-            let leading_zeros = m_mut.leading_zeros();
-            let next_move = (1 as u128) << (127 - leading_zeros);
+            let trailing_zeros = m_mut.trailing_zeros();
+            let next_move = (1 as u128) << (trailing_zeros);
             m_mut &= !next_move;
-            let next_move_fs = (127 - leading_zeros) as i64;
+            let next_move_fs = (trailing_zeros) as i64;
             if !fun(next_move, next_move_fs) {
                 return;
             }
