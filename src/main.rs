@@ -22,7 +22,7 @@ macro_rules! parse_input {
 
 fn main() {
     //let mut curr_ai : Box<dyn AI> = Box::new(SimpleSearchAI::new(SimpleSearchAI::abriand_eval_1(), 8));
-    let mut curr_ai : Box<dyn AI> = Box::new(MCTSAI::new(0.1));
+    let mut curr_ai : Box<dyn AI> = Box::new(MCTSAI::new(0.6));
     // game loop
     loop {
         let mut input_line = String::new();
