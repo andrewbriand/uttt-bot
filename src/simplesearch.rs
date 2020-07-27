@@ -154,9 +154,9 @@ impl SimpleSearchAI {
                   }
               }
               if board.x_occupancy & ((1 as u128) << (81 + 4)) != 0 {
-                  result += (me as i32) * 1000;
+                  result += (me as i32) * 500;
               } else if board.o_occupancy & ((1 as u128) << (81 + 4)) != 0 {
-                  result -= (me as i32) * 1000;
+                  result -= (me as i32) * 500;
               }
               
               for i in [4, 13, 22, 31, 40, 49, 58, 67, 76].iter() {

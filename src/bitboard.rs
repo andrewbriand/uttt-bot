@@ -81,33 +81,62 @@ impl BitBoard {
         let space = m.trailing_zeros() as u64;
         let block_num = space / 9;
         let block_offset = space % 9;
-        match self.to_move {
-            1 => {tuple  = self.update_occupancy(self.x_occupancy, m, block_num); self.x_occupancy = tuple.0; result = tuple.1;},
-            -1 => {tuple = self.update_occupancy(self.o_occupancy, m, block_num); self.o_occupancy = tuple.0; result = tuple.1;},
-            _ => panic!("to_move: {}", self.to_move),
-        };
-        if self.x_occupancy & (1 << (81 + block_offset)) == 0
-           && self.o_occupancy & (1 << (81 + block_offset)) == 0
+        if self.to_move == 1 {
+            tuple  = self.update_occupancy(self.x_occupancy, m, block_num); 
+            self.x_occupancy = tuple.0; 
+            result = tuple.1;
+        } else {
+            tuple = self.update_occupancy(self.o_occupancy, m, block_num); 
+            self.o_occupancy = tuple.0; 
+            result = tuple.1;
+        }
+        if (self.x_occupancy | self.o_occupancy) & (1 << (81 + block_offset)) == 0
            && (((self.x_occupancy | self.o_occupancy) 
            >> (block_offset * 9)) & 0x1FF) != 0x1FF
-                {
+          // (self.x_occupancy | self.o_occupancy) & ((1 << (81 + block_offset)) | ()) == 
+        {
             self.next_legal = (0x1FF as u128) << (block_offset * 9);
             //println!("self.next_legal: {:#0130b}", self.next_legal);
         } else {
             self.next_legal = CELL_MASK;
-            for i in 0..9 {
-                if self.x_occupancy & (1 << (81 + i)) != 0 ||
-                self.o_occupancy & (1 << (81 + i)) != 0  {
-                    self.next_legal &= !(0x1FF << (i*9));
-                }
+            /*for i in 0..9 {
+        //        self.next_legal &= !(((0x1FF as u128) << (i*9)) * ((self.x_occupancy | self.o_occupancy) & ((1 as u128) << (81 + i))).count_ones() as u128);
+              if (self.x_occupancy | self.o_occupancy) & (1 << (81 + i)) != 0 {
+                self.next_legal &= !(0x1FF << (i*9));
+              }
+
+            }*/
+            if (self.x_occupancy | self.o_occupancy) & (1 << (81 + 0)) != 0 {
+                self.next_legal &= !(0x1FF << (0*9));
+            }
+            if (self.x_occupancy | self.o_occupancy) & (1 << (81 + 1)) != 0 {
+                self.next_legal &= !(0x1FF << (1*9));
+            }
+            if (self.x_occupancy | self.o_occupancy) & (1 << (81 + 2)) != 0 {
+                self.next_legal &= !(0x1FF << (2*9));
+            }
+            if (self.x_occupancy | self.o_occupancy) & (1 << (81 + 3)) != 0 {
+                self.next_legal &= !(0x1FF << (3*9));
+            }
+            if (self.x_occupancy | self.o_occupancy) & (1 << (81 + 4)) != 0 {
+                self.next_legal &= !(0x1FF << (4*9));
+            }
+            if (self.x_occupancy | self.o_occupancy) & (1 << (81 + 5)) != 0 {
+                self.next_legal &= !(0x1FF << (5*9));
+            }
+            if (self.x_occupancy | self.o_occupancy) & (1 << (81 + 6)) != 0 {
+                self.next_legal &= !(0x1FF << (6*9));
+            }
+            if (self.x_occupancy | self.o_occupancy) & (1 << (81 + 7)) != 0 {
+                self.next_legal &= !(0x1FF << (7*9));
+            }
+            if (self.x_occupancy | self.o_occupancy) & (1 << (81 + 8)) != 0 {
+                self.next_legal &= !(0x1FF << (8*9));
             }
         }
 
-        self.next_legal &= !self.x_occupancy;
-        self.next_legal &= !self.o_occupancy;
-
+        self.next_legal &= !(self.x_occupancy | self.o_occupancy);
         //println!("self.next_legal: {:#0130b}", self.next_legal);
-
         self.to_move = -self.to_move;
         return result;
     }
@@ -152,7 +181,7 @@ impl BitBoard {
     }
 
     pub fn random_move(moves: u128) -> u128 {
-        assert!(moves != 0);
+        //assert!(moves != 0);
          let m_lower_half: u64 = (moves & ((1 << 64) - 1)) as u64;
          let m_upper_half: u64 = (moves >> 64) as u64;
          let upper_popcnt = m_upper_half.count_ones() as u64;
