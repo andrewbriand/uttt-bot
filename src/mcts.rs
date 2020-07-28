@@ -6,6 +6,10 @@ use crate::bitboard::BitBoard;
 use std::time::{Duration, Instant};
 use std::collections::HashMap;
 
+use std::mem::MaybeUninit;
+
+use std::thread;
+
 use rand;
 
 static PARTIAL_CREDIT: [u64; 4096] = [
@@ -4107,6 +4111,8 @@ static PARTIAL_CREDIT: [u64; 4096] = [
 0x0,
 ];
 
+static mut EXPLODING_MASK: [u128; 512] = [0; 512];
+
 pub struct MCTSAI {
     board: BitBoard,
     me: i8,
@@ -4115,12 +4121,13 @@ pub struct MCTSAI {
 }
 
 #[derive(Clone)]
-struct TreeNode {
+pub struct TreeNode {
     pub board: BitBoard,
     //pub children: HashMap<u64, TreeNode>,
     pub children: Vec<TreeNode>,
     pub sim_count: u64,
     pub avg_reward: f64,
+    pub visited: bool, 
 }
 
 impl TreeNode {
@@ -4130,47 +4137,53 @@ impl TreeNode {
             children: Vec::with_capacity(81),
             sim_count: 0,
             avg_reward: 0.0,
+            visited: false,
         }
     }
 }
 
 static rollouts_per_sim: u32 = 10;
-
 impl AI for MCTSAI {
     fn get_move(&mut self, x_time: Duration, o_time: Duration) -> i64 {
-        self.me = self.board.to_move;
-        let mut time_remaining = Duration::from_millis(92);
-        let before = Instant::now();
         let mut tree = TreeNode::new(self.board.clone());
-        let mut num_rollouts = 0;
-        loop {
-          for _i in 0..10 {
-              self.rollout(&mut tree);
-          }
-          num_rollouts += 10 * rollouts_per_sim;
-          let duration = Instant::now() - before;
-          if duration > time_remaining {
-              break;
-          }
+        let mut treeVec : Vec<TreeNode> = Vec::new();
+        let num_threads = 2;
+        let mut threadVec = Vec::new();
+        let me = self.board.to_move;
+        let exploration = self.exploration;
+        for i in 0..num_threads {
+            let board = self.board.clone();
+            threadVec.push(thread::spawn(move || {
+                MCTSAI::fill_tree(me, board, exploration)
+            }));
+        
         }
+        for i in 0..threadVec.len() {
+            let join_handle = threadVec.remove(0);
+            treeVec.push(join_handle.join().expect("oh nooo my thread"));
+        }
+        let mut index = 0;
         let mut best_count = 0;
         let mut best_move = 82;
         let mut best_reward = -1.0;
-        let mut index = 0;
         BitBoard::iterate_moves(tree.board.get_moves(), &mut |m: u128, _sf: i64| {
-            let node = &tree.children[index];
+            let mut sim_reward = 0.0;
+            for i in 0..num_threads {
+                sim_reward += treeVec[i].children[index].avg_reward;
+            }
+            //let node = &tree.children[index];
             let m = _sf;
-            if node.sim_count > best_count {
-                best_count = node.sim_count;
+            if sim_reward > best_reward {
+                best_reward = sim_reward;
                 best_move = m;
-                best_reward = node.avg_reward;
+                //best_reward = node.avg_reward;
             }
             index += 1;
             return true;
         });
-        eprintln!("num_rollouts: {}", num_rollouts);
+        //eprintln!("num_rollouts: {}", num_rollouts);
         eprintln!("best_reward: {}", best_reward);
-        eprintln!("best_count: {}", best_count);
+        //eprintln!("best_count: {}", best_count);
         self.board.make_move(1 << best_move);
 
         return best_move as i64;
@@ -4187,12 +4200,39 @@ impl AI for MCTSAI {
 
 impl MCTSAI {
     pub fn new(_exploration: f64) -> MCTSAI {
+        for i in 0..512 {
+            let mut big_i = i as u128;
+            for j in 1..9 {
+                big_i |= ((i as u128) << (j*9));
+            }
+            unsafe {
+            EXPLODING_MASK[i] = big_i;
+            }
+        }
         MCTSAI {
             //exploration: ((1.0 - epsilon) * (std::u16::MAX as f64)) as u16,
             exploration: _exploration,
             board: BitBoard::new(),
             me: 1,
         }
+    }
+
+    fn fill_tree(me: i8, board: BitBoard, exploration: f64) -> TreeNode {
+        let mut tree = TreeNode::new(board);
+        let mut time_remaining = Duration::from_millis(80);
+        let before = Instant::now();
+        let mut num_rollouts = 0;
+        loop {
+          for _i in 0..10 {
+              MCTSAI::rollout(me, &mut tree, exploration);
+          }
+          num_rollouts += 10 * rollouts_per_sim;
+          let duration = Instant::now() - before;
+          if duration > time_remaining {
+              break;
+          }
+        }
+        return tree;
     }
 
     fn eval(board: &mut BitBoard, me: i8) -> f64 {
@@ -4259,20 +4299,25 @@ impl MCTSAI {
               return result;
     }
 
-    pub fn rollout(&self, node: &mut TreeNode) -> f64 {
+    pub fn rollout(me: i8, node: &mut TreeNode, exploration: f64) -> f64 {
         let mut reward: f64 = 0.0;
         // Is the game ended?
         if node.board.get_winner() != 0 {
             node.sim_count += 1;
-            if node.board.get_winner() == self.me {
+            if node.board.get_winner() == me {
                 return rollouts_per_sim as f64;
-            } else if node.board.get_winner() == -self.me {
+            } else if node.board.get_winner() == -me {
                 return 0.0;
             }
             return 0.0 * (rollouts_per_sim as f64);
         }
-        // Is this a leaf?
-        if node.children.len() == 0 {
+
+        if !node.visited {
+            for _i in 0..rollouts_per_sim {
+                reward += MCTSAI::simulate(me, node.board.clone());
+            }
+            node.visited = true;
+        } else if node.children.len() == 0 { // Is this a leaf?
             let mut moves = node.board.get_moves();
             // let board = &node.board;
             /*node.children.resize_with(moves.count_zeros() as usize, || {
@@ -4288,7 +4333,7 @@ impl MCTSAI {
               let mut new_board = node.board.clone();
               new_board.make_move(m);
               let mut new_node = TreeNode::new(new_board);
-              new_node.avg_reward = MCTSAI::eval(&mut new_node.board, self.me) * (rollouts_per_sim as f64);
+              new_node.avg_reward = MCTSAI::eval(&mut new_node.board, me) * (rollouts_per_sim as f64);
               new_node.sim_count = 1;
               node.children.push(new_node);
             }
@@ -4302,10 +4347,11 @@ impl MCTSAI {
             let rand = (rand::random::<u8>() as usize) % node.children.len();
             let mut this_node = &mut node.children[rand];
             for _i in 0..rollouts_per_sim {
-                reward += self.simulate(this_node.board.clone());
+                reward += MCTSAI::simulate(me, this_node.board.clone());
             }
             this_node.avg_reward = reward;
             this_node.sim_count = 1;
+            this_node.visited = true;
         } else {
             let mut move_score = -1000000000.0;
             let mut index = 0;
@@ -4315,8 +4361,8 @@ impl MCTSAI {
                     index = i;
                     break;
                 }
-                let score = ((node.board.to_move * self.me) as f64) *
-                            (n.avg_reward) + self.exploration * ((node.sim_count as f64).log2()/(n.sim_count as f64)).sqrt();
+                let score = ((node.board.to_move * me) as f64) *
+                            (n.avg_reward) + exploration * ((node.sim_count as f64).log2()/(n.sim_count as f64)).sqrt();
                 if score > move_score {
                     move_score = score;
                     index = i;
@@ -4324,7 +4370,7 @@ impl MCTSAI {
             }
             //let mut new_node = node.children.get(&reward_move).unwrap().clone();
             let mut new_node = &mut node.children[index];
-            reward = self.rollout(new_node);
+            reward = MCTSAI::rollout(me, new_node, exploration);
         }
        /* let mut best_score = -1000000.0;
         node.sim_count += 1;
@@ -4339,14 +4385,22 @@ impl MCTSAI {
         return reward;
     }
     
-    pub fn simulate(&self, mut board: BitBoard) -> f64 {
+    pub fn simulate(me: i8, mut board: BitBoard) -> f64 {
         while board.get_winner() == 0 {
-            board.make_move(BitBoard::random_move(board.get_moves()));
+            unsafe {
+            //let occup = board.o_occupancy | board.x_occupancy;
+            //let mut no_explode = board.get_moves() & !(EXPLODING_MASK[((occup >> 81) & 0x1FF) as usize]);
+            //if no_explode != 0 {
+            //    board.make_move(BitBoard::random_move(no_explode));
+            //} else {
+                board.make_move(BitBoard::random_move(board.get_moves()));
+            //}
+        }
         }
         let winner = board.get_winner();
-        if winner == self.me {
+        if winner == me {
             return 1.0;
-        } else if winner == -self.me {
+        } else if winner == -me {
             return 0.0;
         }
         return 0.5;
