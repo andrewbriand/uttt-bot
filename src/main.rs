@@ -1,8 +1,8 @@
 mod ai;
 use ai::AI;
 
-//mod simplesearch;
-//use simplesearch::SimpleSearchAI;
+mod simplesearch;
+use simplesearch::SimpleSearchAI;
 
 mod mcts;
 use mcts::MCTSAI;
@@ -10,6 +10,7 @@ use mcts::MCTSAI;
 use std::io;
 
 mod bitboard;
+use bitboard::BitBoard;
 
 //use text_io::read;
 
@@ -21,8 +22,9 @@ macro_rules! parse_input {
 
 
 fn main() {
-    //let mut curr_ai : Box<dyn AI> = Box::new(SimpleSearchAI::new(SimpleSearchAI::abriand_eval_1(), 8));
+    let mut curr_ai_endgame : Box<dyn AI> = Box::new(SimpleSearchAI::new(SimpleSearchAI::abriand_eval_1(), 8));
     let mut curr_ai : Box<dyn AI> = Box::new(MCTSAI::new(1.0));
+    let mut board = BitBoard::new();
     // game loop
     loop {
         let mut input_line = String::new();
@@ -33,6 +35,11 @@ fn main() {
         if (opponent_row != -1 && opponent_col != -1) {
             curr_ai.make_move((opponent_col/3)*9 + (opponent_col % 3) 
                                + (opponent_row/3)*27 + 3*(opponent_row % 3));
+            curr_ai_endgame.make_move((opponent_col/3)*9 + (opponent_col % 3) 
+                               + (opponent_row/3)*27 + 3*(opponent_row % 3));
+            board.make_move(1 << ((opponent_col/3)*9 + (opponent_col % 3) 
+                               + (opponent_row/3)*27 + 3*(opponent_row % 3)));
+
 //            board.make_move((1 as u16) << (opponent_row*3 + opponent_col));
         }
         let mut input_line = String::new();
@@ -47,9 +54,23 @@ fn main() {
             
 
         }
-
-
-        let best_move = curr_ai.get_move(Duration::from_millis(0), Duration::from_millis(0));
+        let mut occup = board.x_occupancy | board.o_occupancy;
+        for i in 0..8 {
+            if occup & (1 << (81 + i)) != 0 {
+              occup |= (0x1FF << (i*9));
+            }
+        }
+        let cells_remaining = 81 - (((1 << 81) - 1) & occup).count_ones();
+        let mut best_move;
+        if cells_remaining > 10 {
+            eprintln!("MC");
+            best_move = curr_ai.get_move(Duration::from_millis(0), Duration::from_millis(0));
+            curr_ai_endgame.make_move(best_move);
+            board.make_move(1 << best_move);
+        } else {
+            eprintln!("AB");
+            best_move = curr_ai_endgame.get_move(Duration::from_millis(0), Duration::from_millis(0));
+        }
        // eprintln!("best_move: {}", best_move);
         let response_row = ((best_move/9) % 3)*3 + best_move % 3;
         let response_col = ((best_move/9) / 3)*3 + (best_move % 9)/3;

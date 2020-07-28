@@ -22,7 +22,7 @@ impl AI for SimpleSearchAI {
         let mut next_depth_estimate: Duration = Duration::from_millis(0);
         self.me = self.board.to_move;
         let mut total_time = Duration::from_millis(90);
-        let mut depth = 4;
+        let mut depth = 10;
         while next_depth_estimate < total_time {
             let alpha = -100000000;
             let beta = 100000000;
