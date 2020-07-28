@@ -4121,6 +4121,7 @@ struct TreeNode {
     pub children: Vec<TreeNode>,
     pub sim_count: u64,
     pub avg_reward: f64,
+    pub visited: bool,
 }
 
 impl TreeNode {
@@ -4130,6 +4131,7 @@ impl TreeNode {
             children: Vec::with_capacity(81),
             sim_count: 0,
             avg_reward: 0.0,
+            visited: false,
         }
     }
 }
@@ -4271,8 +4273,13 @@ impl MCTSAI {
             }
             return 0.0 * (rollouts_per_sim as f64);
         }
-        // Is this a leaf?
-        if node.children.len() == 0 {
+
+        if !node.visited {
+            for _i in 0..rollouts_per_sim {
+                reward += self.simulate(node.board.clone());
+            }
+            node.visited = true;
+        } else if node.children.len() == 0 {// Is this a leaf?
             let mut moves = node.board.get_moves();
             // let board = &node.board;
             /*node.children.resize_with(moves.count_zeros() as usize, || {
@@ -4306,6 +4313,7 @@ impl MCTSAI {
             }
             this_node.avg_reward = reward;
             this_node.sim_count = 1;
+            this_node.visited = true;
         } else {
             let mut move_score = -1000000000.0;
             let mut index = 0;
