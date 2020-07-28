@@ -6,7 +6,8 @@ use crate::bitboard::BitBoard;
 use std::time::{Duration, Instant};
 use std::collections::HashMap;
 
-use rand;
+use rand::{SeedableRng, Rng, RngCore};
+use rand::rngs::SmallRng;
 
 static PARTIAL_CREDIT: [u64; 4096] = [
 0xfffffffffffffff8,
@@ -4111,6 +4112,7 @@ pub struct MCTSAI {
     board: BitBoard,
     me: i8,
     exploration: f64,
+    rand: SmallRng,
     //exploration: u16,
 }
 
@@ -4194,6 +4196,7 @@ impl MCTSAI {
             exploration: _exploration,
             board: BitBoard::new(),
             me: 1,
+            rand: SmallRng::from_entropy(),
         }
     }
 
@@ -4261,7 +4264,7 @@ impl MCTSAI {
               return result;
     }
 
-    pub fn rollout(&self, node: &mut TreeNode) -> f64 {
+    pub fn rollout(&mut self, node: &mut TreeNode) -> f64 {
         let mut reward: f64 = 0.0;
         // Is the game ended?
         if node.board.get_winner() != 0 {
@@ -4306,7 +4309,7 @@ impl MCTSAI {
               node.children.push(new_node);
               return true;
             });*/
-            let rand = (rand::random::<u8>() as usize) % node.children.len();
+            let rand = (self.rand.next_u32() as usize) % node.children.len();
             let mut this_node = &mut node.children[rand];
             for _i in 0..rollouts_per_sim {
                 reward += self.simulate(this_node.board.clone());
@@ -4347,9 +4350,9 @@ impl MCTSAI {
         return reward;
     }
     
-    pub fn simulate(&self, mut board: BitBoard) -> f64 {
+    pub fn simulate(&mut self, mut board: BitBoard) -> f64 {
         while board.get_winner() == 0 {
-            board.make_move(BitBoard::random_move(board.get_moves()));
+            board.make_move(BitBoard::random_move(board.get_moves(), &mut (self.rand)));
         }
         let winner = board.get_winner();
         if winner == self.me {
