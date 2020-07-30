@@ -4,6 +4,9 @@ use ai::AI;
 //mod simplesearch;
 //use simplesearch::SimpleSearchAI;
 
+mod nn;
+use nn::NeuralNet;
+
 mod mcts;
 use mcts::MCTSAI;
 
