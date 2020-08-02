@@ -16,3 +16,15 @@ features = ["small_rng"]
 
 [profile.release]
 debug = true
+
+[[bin]]
+name = "uttt-bot"
+path = "src/main.rs"
+
+[[bin]]
+name = "pit"
+path = "src/pit.rs"
+
+[[bin]]
+name = "genexamples"
+path = "src/genexamples.rs"

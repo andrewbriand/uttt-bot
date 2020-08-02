@@ -77,6 +77,7 @@ impl BitBoard {
         //if m & self.next_legal == 0 {
         //    return false;
        // }
+        debug_assert!(m & self.next_legal != 0);
         let mut result = false;
         let mut tuple;
         //let mut leading_zeros : u64 = m.leading_zeros() as u64;
