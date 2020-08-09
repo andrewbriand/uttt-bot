@@ -39,9 +39,9 @@ fn main() {
         for tr in recs {
             for i in 0..81 {
                 if tr.board.x_occupancy & (1 << i) != 0 {
-                    print!("1.0 ");
+                    print!("{} ", 1.0 * (tr.board.to_move as f64));
                 } else if tr.board.o_occupancy & (1 << i) != 0 {
-                    print!("-1.0 ");
+                    print!("{} ", -1.0 * (tr.board.to_move as f64));
                 } else {
                     print!("0.0 ");
                 }

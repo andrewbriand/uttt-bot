@@ -228,8 +228,8 @@ while(True):
     if pit_result > 5:
         model = new_model
         best_dir = "./temp" + str(iteration) 
-        inputs = []
-        labels = []
+        #inputs = []
+        #labels = []
 
     print(pit_result)
     
