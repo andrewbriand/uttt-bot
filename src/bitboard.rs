@@ -22,6 +22,9 @@ static WINNER_MASK: u128 = 1 << 90;
 // Only supports 2 levels
 #[derive(Debug)]
 #[derive(Clone)]
+#[derive(PartialEq)]
+#[derive(Eq)]
+#[derive(Hash)]
 pub struct BitBoard {
     pub x_occupancy: u128,
     pub o_occupancy: u128,

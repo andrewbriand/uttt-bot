@@ -4113,6 +4113,7 @@ pub struct MCTSAI {
     me: i8,
     exploration: f64,
     rand: SmallRng,
+    rave_map: HashMap<(BitBoard, i64), (u64, f64)>,
     //exploration: u16,
 }
 
@@ -4121,6 +4122,7 @@ struct TreeNode {
     pub board: BitBoard,
     //pub children: HashMap<u64, TreeNode>,
     pub children: Vec<TreeNode>,
+    pub child_moves: Vec<i64>,
     pub sim_count: u64,
     pub avg_reward: f64,
     pub visited: bool,
@@ -4131,6 +4133,7 @@ impl TreeNode {
         TreeNode {
             board: _board,
             children: Vec::with_capacity(81),
+            child_moves: Vec::with_capacity(81),
             sim_count: 0,
             avg_reward: 0.0,
             visited: false,
@@ -4147,9 +4150,10 @@ impl AI for MCTSAI {
         let before = Instant::now();
         let mut tree = TreeNode::new(self.board.clone());
         let mut num_rollouts = 0;
+        let mut move_vec = Vec::with_capacity(81);
         loop {
           for _i in 0..10 {
-              self.rollout(&mut tree);
+              self.rollout(&mut tree, &mut move_vec);
           }
           num_rollouts += 10 * rollouts_per_sim;
           let duration = Instant::now() - before;
@@ -4197,6 +4201,7 @@ impl MCTSAI {
             board: BitBoard::new(),
             me: 1,
             rand: SmallRng::from_entropy(),
+            rave_map: HashMap::new(),
         }
     }
 
@@ -4264,7 +4269,7 @@ impl MCTSAI {
               return result;
     }
 
-    pub fn rollout(&mut self, node: &mut TreeNode) -> f64 {
+    pub fn rollout(&mut self, node: &mut TreeNode, move_vec: &mut Vec<i64>) -> f64 {
         let mut reward: f64 = 0.0;
         // Is the game ended?
         if node.board.get_winner() != 0 {
@@ -4301,6 +4306,7 @@ impl MCTSAI {
               new_node.avg_reward = MCTSAI::eval(&mut new_node.board, self.me) * (rollouts_per_sim as f64);
               new_node.sim_count = 1;
               node.children.push(new_node);
+              node.child_moves.push(m.trailing_zeros() as i64);
             }
             /*BitBoard::iterate_moves(node.board.get_moves(), &mut |m: u128, _sf: i64| {
               let mut new_board = node.board.clone();
@@ -4335,7 +4341,8 @@ impl MCTSAI {
             }
             //let mut new_node = node.children.get(&reward_move).unwrap().clone();
             let mut new_node = &mut node.children[index];
-            reward = self.rollout(new_node);
+            move_vec.push(node.child_moves[index]);
+            reward = self.rollout(new_node, move_vec);
         }
        /* let mut best_score = -1000000.0;
         node.sim_count += 1;
