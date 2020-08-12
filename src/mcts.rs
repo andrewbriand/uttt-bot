@@ -4332,8 +4332,8 @@ impl MCTSAI {
             for _i in 0..rollouts_per_sim {
                 reward += MCTSAI::simulate(this_node.board.clone(), me, rng);
             }
-            this_node.avg_reward = reward;
-            this_node.sim_count = 1;
+            this_node.sim_count += 1;
+            this_node.avg_reward = ((reward - this_node.avg_reward) / (this_node.sim_count as f64));
             this_node.visited = true;
         } else {
             let mut move_score = -1000000000.0;
