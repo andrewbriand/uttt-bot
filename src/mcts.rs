@@ -4144,7 +4144,7 @@ static rollouts_per_sim: u32 = 10;
 impl AI for MCTSAI {
     fn get_move(&mut self, x_time: Duration, o_time: Duration) -> i64 {
         self.me = self.board.to_move;
-        let mut time_remaining = Duration::from_millis(92);
+        let mut time_remaining = Duration::from_millis(85);
         let before = Instant::now();
         let mut tree = &mut self.tree;
         let mut num_rollouts = 0;
@@ -4333,7 +4333,7 @@ impl MCTSAI {
                 reward += MCTSAI::simulate(this_node.board.clone(), me, rng);
             }
             this_node.sim_count += 1;
-            this_node.avg_reward = ((reward - this_node.avg_reward) / (this_node.sim_count as f64));
+            this_node.avg_reward += ((reward - this_node.avg_reward) / (this_node.sim_count as f64));
             this_node.visited = true;
         } else {
             let mut move_score = -1000000000.0;
