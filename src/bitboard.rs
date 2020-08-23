@@ -93,8 +93,10 @@ impl BitBoard {
             result = tuple.1;
         }
         if (self.x_occupancy | self.o_occupancy) & (1 << (81 + block_offset)) == 0
-           && (((self.x_occupancy | self.o_occupancy) 
-           >> (block_offset * 9)) & 0x1FF) != 0x1FF
+           //&& (((self.x_occupancy | self.o_occupancy) 
+           // >> (block_offset * 9)) & 0x1FF) != 0x1FF
+           && (self.x_occupancy | self.o_occupancy) 
+           & ((0x1FF as u128) << (block_offset * 9)) != ((0x1FF as u128) << (block_offset * 9))
           // (self.x_occupancy | self.o_occupancy) & ((1 << (81 + block_offset)) | ()) == 
         {
             self.next_legal = (0x1FF as u128) << (block_offset * 9);
