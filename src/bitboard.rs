@@ -59,6 +59,11 @@ impl BitBoard {
         }
         //println!("level1_win: {}", level1_win);
         occup |=  (level1_win as u128) << (81 + block_num);
+        occup |= (level1_win as u128) << (91 + block_num);
+
+        if block == 0x1FF {
+           occup |= 1 << (91 + block_num);
+        }
 
         let board = (occup >> 81) & 0x1FF;
         let mut level2_win =
@@ -92,12 +97,13 @@ impl BitBoard {
             self.o_occupancy = tuple.0; 
             result = tuple.1;
         }
-        if (self.x_occupancy | self.o_occupancy) & (1 << (81 + block_offset)) == 0
+        if (self.x_occupancy | self.o_occupancy) & (1 << (91 + block_offset)) == 0
+        /*(self.x_occupancy | self.o_occupancy) & (1 << (81 + block_offset)) == 0
            //&& (((self.x_occupancy | self.o_occupancy) 
            // >> (block_offset * 9)) & 0x1FF) != 0x1FF
            && (self.x_occupancy | self.o_occupancy) 
            & ((0x1FF as u128) << (block_offset * 9)) != ((0x1FF as u128) << (block_offset * 9))
-          // (self.x_occupancy | self.o_occupancy) & ((1 << (81 + block_offset)) | ()) == 
+          // (self.x_occupancy | self.o_occupancy) & ((1 << (81 + block_offset)) | ()) == */
         {
             self.next_legal = (0x1FF as u128) << (block_offset * 9);
             //println!("self.next_legal: {:#0130b}", self.next_legal);
