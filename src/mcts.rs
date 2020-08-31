@@ -4144,7 +4144,30 @@ static rollouts_per_sim: u32 = 10;
 impl AI for MCTSAI {
     fn get_move(&mut self, x_time: Duration, o_time: Duration) -> i64 {
         self.me = self.board.to_move;
-        let mut time_remaining = Duration::from_millis(85);
+        if self.tree.board.x_occupancy == 0 {
+            let time_remaining = Duration::from_millis(900);
+            self.tree.board.make_move(1 << 40);
+            let before = Instant::now();
+            let mut tree = &mut self.tree;
+            let mut num_rollouts = 0;
+            loop {
+              for _i in 0..10 {
+                  MCTSAI::rollout(tree, self.me, &mut (self.rand), self.exploration);
+              }
+              num_rollouts += 10 * rollouts_per_sim;
+              let duration = Instant::now() - before;
+              if duration > time_remaining {
+                  break;
+              }
+            }
+            return 40;
+        }
+        let time_remaining;
+        if self.tree.board.o_occupancy == 0 {
+            time_remaining = Duration::from_millis(900);
+        } else {
+            time_remaining = Duration::from_millis(85);
+        }
         let before = Instant::now();
         let mut tree = &mut self.tree;
         let mut num_rollouts = 0;
