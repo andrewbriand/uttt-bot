@@ -4143,9 +4143,9 @@ static rollouts_per_sim: u32 = 10;
 
 impl AI for MCTSAI {
     fn get_move(&mut self, x_time: Duration, o_time: Duration) -> i64 {
-        self.me = self.board.to_move;
+        self.me = self.tree.board.to_move;
         if self.tree.board.x_occupancy == 0 {
-            let time_remaining = Duration::from_millis(900);
+            let time_remaining = Duration::from_millis(985);
             self.tree.board.make_move(1 << 40);
             let before = Instant::now();
             let mut tree = &mut self.tree;
@@ -4164,7 +4164,7 @@ impl AI for MCTSAI {
         }
         let time_remaining;
         if self.tree.board.o_occupancy == 0 {
-            time_remaining = Duration::from_millis(900);
+            time_remaining = Duration::from_millis(985);
         } else {
             time_remaining = Duration::from_millis(85);
         }
@@ -4208,7 +4208,10 @@ impl AI for MCTSAI {
     }
 
     fn make_move(&mut self, m: i64) {
-        if self.tree.board.x_occupancy != 0 {
+        self.me = -self.tree.board.to_move;
+        if self.me == -1 && self.tree.board.o_occupancy == 0 {
+            self.tree.board.make_move(1 << m);
+        } else {
           let mut index = 0;
           BitBoard::iterate_moves(self.tree.board.get_moves(), &mut |_m: u128, _sf: i64| {
               if _sf == m {
@@ -4218,10 +4221,8 @@ impl AI for MCTSAI {
               index += 1;
               return true;
           });
-        } else {
-            self.tree.board.make_move(1 << m);
         }
-        self.board.make_move(1 << m);
+        //self.board.make_move(1 << m);
     }
 
     fn cleanup(&mut self) {
