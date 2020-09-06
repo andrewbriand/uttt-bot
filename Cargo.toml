@@ -28,3 +28,7 @@ path = "src/pit.rs"
 [[bin]]
 name = "genexamples"
 path = "src/genexamples.rs"
+
+[[bin]]
+name = "genevaltraining"
+path = "src/genevaltraining.rs"
