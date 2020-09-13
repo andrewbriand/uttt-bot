@@ -16,3 +16,12 @@ features = ["small_rng"]
 
 [profile.release]
 debug = true
+
+[[bin]]
+name = "main"
+path = "src/main.rs"
+
+[[bin]]
+name = "elo"
+path = "src/elo.rs"
+
