@@ -56,6 +56,7 @@ impl BitBoard {
         if level1_win != 0 {
             capture = true;
             level1_win = 1;
+            occup |= 0x1FF << (block_num * 9);
         }
         //println!("level1_win: {}", level1_win);
         occup |=  (level1_win as u128) << (81 + block_num);
@@ -109,40 +110,6 @@ impl BitBoard {
             //println!("self.next_legal: {:#0130b}", self.next_legal);
         } else {
             self.next_legal = CELL_MASK;
-            /*for i in 0..9 {
-        //        self.next_legal &= !(((0x1FF as u128) << (i*9)) * ((self.x_occupancy | self.o_occupancy) & ((1 as u128) << (81 + i))).count_ones() as u128);
-              if (self.x_occupancy | self.o_occupancy) & (1 << (81 + i)) != 0 {
-                self.next_legal &= !(0x1FF << (i*9));
-              }
-
-            }*/
-            if (self.x_occupancy | self.o_occupancy) & (1 << (81 + 0)) != 0 {
-                self.next_legal &= !(0x1FF << (0*9));
-            }
-            if (self.x_occupancy | self.o_occupancy) & (1 << (81 + 1)) != 0 {
-                self.next_legal &= !(0x1FF << (1*9));
-            }
-            if (self.x_occupancy | self.o_occupancy) & (1 << (81 + 2)) != 0 {
-                self.next_legal &= !(0x1FF << (2*9));
-            }
-            if (self.x_occupancy | self.o_occupancy) & (1 << (81 + 3)) != 0 {
-                self.next_legal &= !(0x1FF << (3*9));
-            }
-            if (self.x_occupancy | self.o_occupancy) & (1 << (81 + 4)) != 0 {
-                self.next_legal &= !(0x1FF << (4*9));
-            }
-            if (self.x_occupancy | self.o_occupancy) & (1 << (81 + 5)) != 0 {
-                self.next_legal &= !(0x1FF << (5*9));
-            }
-            if (self.x_occupancy | self.o_occupancy) & (1 << (81 + 6)) != 0 {
-                self.next_legal &= !(0x1FF << (6*9));
-            }
-            if (self.x_occupancy | self.o_occupancy) & (1 << (81 + 7)) != 0 {
-                self.next_legal &= !(0x1FF << (7*9));
-            }
-            if (self.x_occupancy | self.o_occupancy) & (1 << (81 + 8)) != 0 {
-                self.next_legal &= !(0x1FF << (8*9));
-            }
         }
 
         self.next_legal &= !(self.x_occupancy | self.o_occupancy);

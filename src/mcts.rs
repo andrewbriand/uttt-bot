@@ -4145,7 +4145,7 @@ impl AI for MCTSAI {
     fn get_move(&mut self, x_time: Duration, o_time: Duration) -> i64 {
         self.me = self.tree.board.to_move;
         if self.tree.board.x_occupancy == 0 {
-            let time_remaining = Duration::from_millis(985);
+            let time_remaining = Duration::from_millis(50000);
             self.tree.board.make_move(1 << 40);
             let before = Instant::now();
             let mut tree = &mut self.tree;
@@ -4160,6 +4160,7 @@ impl AI for MCTSAI {
                   break;
               }
             }
+            eprintln!("num_rollouts: {}", num_rollouts);
             return 40;
         }
         let time_remaining;
@@ -4242,29 +4243,29 @@ impl MCTSAI {
         }
     }
 
-    fn eval(board: &mut BitBoard, me: i8) -> f64 {
+    fn eval(board: &mut BitBoard, me: i8) -> i32 {
 
               if board.get_winner() == me {
-                 return 1.0;
+                 return 1000;
               } else if board.get_winner() == -me {
-                 return 0.0;
+                 return 0;
               }
-              let mut result : f64 = 0.5;
+              let mut result : i32 = 500;
               // result += (me as i32) * 1000 * (popcnt(((board.x_occupancy >> 81) & 0x1FF) as u16) as i32);
               // result -= (me as i32) * 1000 * (popcnt(((board.o_occupancy >> 81) & 0x1FF) as u16) as i32);
-               result += (me as f64) * 0.055 * (((board.x_occupancy >> 81) & 0x155).count_ones() as f64); // Corners
-               result -= (me as f64) * 0.055 * (((board.o_occupancy >> 81) & 0x155).count_ones() as f64);
-               result += (me as f64) * 0.04 * (((board.x_occupancy >> 81) & 0xAA).count_ones() as f64); // Edges
-               result -= (me as f64) * 0.04 * (((board.o_occupancy >> 81) & 0xAA).count_ones() as f64);
-               result += (me as f64) * 0.027 * ((((board.x_occupancy >> 81) & 0x10) >> 4) as u16) as f64; // Center
-               result -= (me as f64) * 0.027 * ((((board.o_occupancy >> 81) & 0x10) >> 4) as u16) as f64;
+               result += (me as i32) * 55 * (((board.x_occupancy >> 81) & 0x155).count_ones() as i32); // Corners
+               result -= (me as i32) * 55 * (((board.o_occupancy >> 81) & 0x155).count_ones() as i32);
+               result += (me as i32) * 40 * (((board.x_occupancy >> 81) & 0xAA).count_ones() as i32); // Edges
+               result -= (me as i32) * 40 * (((board.o_occupancy >> 81) & 0xAA).count_ones() as i32);
+               result += (me as i32) * 27 * ((((board.x_occupancy >> 81) & 0x10) >> 4) as u16) as i32; // Center
+               result -= (me as i32) * 27 * ((((board.o_occupancy >> 81) & 0x10) >> 4) as u16) as i32;
                let x_table_occupancy = ((board.x_occupancy >> 81) & 0x1FF) | ((board.o_occupancy >> 72) & (0x1FF << 9));
                if (PARTIAL_CREDIT[x_table_occupancy as usize/64] & (1 << (x_table_occupancy % 64))) != 0 {
-                   result += (me as f64) * 0.01;
+                   result += (me as i32) * 10;
                }
                let o_table_occupancy = ((board.o_occupancy >> 81) & 0x1FF) | ((board.x_occupancy >> 72) & (0x1FF << 9));
                if (PARTIAL_CREDIT[o_table_occupancy as usize/64] & (1 << (o_table_occupancy % 64))) != 0 {
-                   result -= (me as f64) * 0.01;
+                   result -= (me as i32) * 10;
                }
                let mut x_occup_filtered = board.x_occupancy & ((1 << 81) - 1);
                for i in 0..9 {
@@ -4272,7 +4273,7 @@ impl MCTSAI {
                        x_occup_filtered &= !(0x1FF << (9*i));
                    }
                }
-               result += (me as f64) * (x_occup_filtered.count_ones() as f64) * 0.003;
+               result += (me as i32) * (x_occup_filtered.count_ones() as i32) * 3;
  
                let mut o_occup_filtered = board.o_occupancy & ((1 << 81) - 1);
                for i in 0..9 {
@@ -4280,7 +4281,7 @@ impl MCTSAI {
                        o_occup_filtered &= !(0x1FF << (9*i));
                    }
                }
-               result -= (me as f64) * ((o_occup_filtered).count_ones() as f64) * 0.003;
+               result -= (me as i32) * ((o_occup_filtered).count_ones() as i32) * 3;
               /*let mut result : f64 = 0.5;
               for i in 0..9 {
                   if board.x_occupancy & ((1 as u128) << (81 + i)) != 0 {
@@ -4340,7 +4341,7 @@ impl MCTSAI {
               let mut new_board = node.board.clone();
               new_board.make_move(m);
               let mut new_node = TreeNode::new(new_board);
-              new_node.avg_reward = MCTSAI::eval(&mut new_node.board, me) * (rollouts_per_sim as f64);
+              new_node.avg_reward = (MCTSAI::eval(&mut new_node.board, me) as f64)/1000.0 * (rollouts_per_sim as f64);
               new_node.sim_count = 1;
               node.children.push(new_node);
             }
