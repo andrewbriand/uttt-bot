@@ -4167,7 +4167,7 @@ impl AI for MCTSAI {
         if self.tree.board.o_occupancy == 0 {
             time_remaining = Duration::from_millis(985);
         } else {
-            time_remaining = Duration::from_millis(60);
+            time_remaining = Duration::from_millis(85);
         }
         let before = Instant::now();
         let mut tree = &mut self.tree;
