@@ -29,3 +29,6 @@ path = "src/elo.rs"
 name = "simd_test"
 path = "src/simd_test.rs"
 
+[[bin]]
+name = "profile"
+path = "src/profile.rs"

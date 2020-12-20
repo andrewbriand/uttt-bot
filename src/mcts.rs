@@ -4145,7 +4145,7 @@ impl AI for MCTSAI {
     fn get_move(&mut self, x_time: Duration, o_time: Duration) -> i64 {
         self.me = self.tree.board.to_move;
         if self.tree.board.x_occupancy == 0 {
-            let time_remaining = Duration::from_millis(50000);
+            let time_remaining = Duration::from_millis(985);
             self.tree.board.make_move(1 << 40);
             let before = Instant::now();
             let mut tree = &mut self.tree;
@@ -4167,7 +4167,7 @@ impl AI for MCTSAI {
         if self.tree.board.o_occupancy == 0 {
             time_remaining = Duration::from_millis(985);
         } else {
-            time_remaining = Duration::from_millis(85);
+            time_remaining = Duration::from_millis(60);
         }
         let before = Instant::now();
         let mut tree = &mut self.tree;
@@ -4206,6 +4206,72 @@ impl AI for MCTSAI {
         self.tree = self.tree.children.remove(best_index);
 
         return best_move as i64;
+    }
+
+    fn get_move_rollouts(&mut self, x_time: Duration, o_time: Duration) -> (i64, u32) {
+        self.me = self.tree.board.to_move;
+        if self.tree.board.x_occupancy == 0 {
+            let time_remaining = Duration::from_millis(50000);
+            self.tree.board.make_move(1 << 40);
+            let before = Instant::now();
+            let mut tree = &mut self.tree;
+            let mut num_rollouts = 0;
+            loop {
+              for _i in 0..10 {
+                  MCTSAI::rollout(tree, self.me, &mut (self.rand), self.exploration);
+              }
+              num_rollouts += 10 * rollouts_per_sim;
+              let duration = Instant::now() - before;
+              if duration > time_remaining {
+                  break;
+              }
+            }
+            //eprintln!("num_rollouts: {}");
+            return (40, num_rollouts);
+        }
+        let time_remaining;
+        if self.tree.board.o_occupancy == 0 {
+            time_remaining = Duration::from_millis(50000);
+        } else {
+            time_remaining = Duration::from_millis(50000);
+        }
+        let before = Instant::now();
+        let mut tree = &mut self.tree;
+        let mut num_rollouts = 0;
+        loop {
+          for _i in 0..10 {
+              MCTSAI::rollout(tree, self.me, &mut (self.rand), self.exploration);
+          }
+          num_rollouts += 10 * rollouts_per_sim;
+          let duration = Instant::now() - before;
+          if duration > time_remaining {
+              break;
+          }
+        }
+        let mut best_count = 0;
+        let mut best_move = 82;
+        let mut best_reward = -1.0;
+        let mut best_index = 0;
+        let mut index = 0;
+        BitBoard::iterate_moves(tree.board.get_moves(), &mut |m: u128, _sf: i64| {
+            let node = &tree.children[index];
+            let m = _sf;
+            if node.sim_count > best_count {
+                best_count = node.sim_count;
+                best_move = m;
+                best_index = index;
+                best_reward = node.avg_reward;
+            }
+            index += 1;
+            return true;
+        });
+        eprintln!("num_rollouts: {}", num_rollouts);
+        eprintln!("best_reward: {}", best_reward);
+        eprintln!("best_count: {}", best_count);
+        self.board.make_move(1 << best_move);
+        self.tree = self.tree.children.remove(best_index);
+
+        return (best_move as i64, num_rollouts);
     }
 
     fn make_move(&mut self, m: i64) {
