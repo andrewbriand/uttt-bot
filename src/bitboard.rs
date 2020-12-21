@@ -53,26 +53,29 @@ impl BitBoard {
         let block = (occup >> (block_num * 9)) & 0x1FF;
         //println!("block: {:#011b}", block);
         let mut level1_win = WIN_TABLE[block as usize / 64] & (1 << (block % 64)); 
-        if level1_win != 0 {
+        let ltemp = level1_win != 0;
+        capture = ltemp;
+        level1_win = ltemp as u64;
+        occup |= (ltemp as u128 * 0x1FF) << (block_num * 9);
+        /*if level1_win != 0 {
             capture = true;
             level1_win = 1;
             occup |= 0x1FF << (block_num * 9);
-        }
+        }*/
         //println!("level1_win: {}", level1_win);
         occup |=  (level1_win as u128) << (81 + block_num);
         occup |= (level1_win as u128) << (91 + block_num);
 
-        if block == 0x1FF {
-           occup |= 1 << (91 + block_num);
-        }
+        let cond = block == 0x1FF;
+        occup |= (cond as u128) << (91 + block_num);
+        /*if block == 0x1FF {
+           occup |= (1 << (91 + block_num);
+        }*/
 
         let board = (occup >> 81) & 0x1FF;
         let mut level2_win =
         (WIN_TABLE[board as usize / 64] & (1 << (board % 64))) as u128;
-        if level2_win != 0 {
-            
-            level2_win = 1;
-        }
+        level2_win = (level2_win != 0) as u128;
         occup |= level2_win << 90;
 
         return (occup, capture);
@@ -112,7 +115,7 @@ impl BitBoard {
             self.next_legal = CELL_MASK;
         }*/
 
-        self.next_legal = CELL_MASK * (((self.x_occupancy | self.o_occupancy) & (1 << (91 + block_offset)) == 0) as u128);
+        self.next_legal = CELL_MASK * (((self.x_occupancy | self.o_occupancy) & (1 << (91 + block_offset)) != 0) as u128);
         self.next_legal |= (0x1FF as u128) << (block_offset * 9);
 
         self.next_legal &= !(self.x_occupancy | self.o_occupancy);
