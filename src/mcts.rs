@@ -4139,7 +4139,7 @@ impl TreeNode {
     }
 }
 
-static rollouts_per_sim: u32 = 10;
+static rollouts_per_sim: u32 = 5;
 
 impl AI for MCTSAI {
     fn get_move(&mut self, x_time: Duration, o_time: Duration) -> i64 {

@@ -1,6 +1,9 @@
 mod ai;
 use ai::AI;
 
+//mod bitboardvec;
+//use bitboardvec::BitBoardVec;
+
 //mod simplesearch;
 //use simplesearch::SimpleSearchAI;
 

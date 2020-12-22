@@ -44,33 +44,22 @@ impl BitBoard {
     }
 
     fn update_occupancy(&mut self, mut occup: u128, m: u128, block_num: u64) -> (u128, bool) {
-        //println!("block_num: {}", block_num);
-        //println!("block_offset: {}", block_offset);
         
         occup |= m;
         let mut capture = false;
 
         let block = (occup >> (block_num * 9)) & 0x1FF;
-        //println!("block: {:#011b}", block);
+
         let mut level1_win = WIN_TABLE[block as usize / 64] & (1 << (block % 64)); 
         let ltemp = level1_win != 0;
         capture = ltemp;
         level1_win = ltemp as u64;
         occup |= (ltemp as u128 * 0x1FF) << (block_num * 9);
-        /*if level1_win != 0 {
-            capture = true;
-            level1_win = 1;
-            occup |= 0x1FF << (block_num * 9);
-        }*/
-        //println!("level1_win: {}", level1_win);
         occup |=  (level1_win as u128) << (81 + block_num);
         occup |= (level1_win as u128) << (91 + block_num);
 
         let cond = block == 0x1FF;
         occup |= (cond as u128) << (91 + block_num);
-        /*if block == 0x1FF {
-           occup |= (1 << (91 + block_num);
-        }*/
 
         let board = (occup >> 81) & 0x1FF;
         let mut level2_win =
@@ -83,43 +72,25 @@ impl BitBoard {
     
     //#[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
     pub fn make_move(&mut self, m: u128) -> bool {
-        //if m & self.next_legal == 0 {
-        //    return false;
-       // }
-        let mut result = false;
-        let mut tuple;
-        //let mut leading_zeros : u64 = m.leading_zeros() as u64;
+
         let space = m.trailing_zeros() as u64;
         let block_num = space / 9;
         let block_offset = space % 9;
-        if self.to_move == 1 {
-            tuple  = self.update_occupancy(self.x_occupancy, m, block_num); 
-            self.x_occupancy = tuple.0; 
-            result = tuple.1;
-        } else {
-            tuple = self.update_occupancy(self.o_occupancy, m, block_num); 
-            self.o_occupancy = tuple.0; 
-            result = tuple.1;
-        }
-        /*if (self.x_occupancy | self.o_occupancy) & (1 << (91 + block_offset)) == 0
-        /*(self.x_occupancy | self.o_occupancy) & (1 << (81 + block_offset)) == 0
-           //&& (((self.x_occupancy | self.o_occupancy) 
-           // >> (block_offset * 9)) & 0x1FF) != 0x1FF
-           && (self.x_occupancy | self.o_occupancy) 
-           & ((0x1FF as u128) << (block_offset * 9)) != ((0x1FF as u128) << (block_offset * 9))
-          // (self.x_occupancy | self.o_occupancy) & ((1 << (81 + block_offset)) | ()) == */
-        {
-            self.next_legal = (0x1FF as u128) << (block_offset * 9);
-            //println!("self.next_legal: {:#0130b}", self.next_legal);
-        } else {
-            self.next_legal = CELL_MASK;
-        }*/
+
+        let mut occup = self.x_occupancy * ((self.to_move == 1) as u128);
+        occup |= self.o_occupancy * ((self.to_move != 1) as u128);
+
+        let tuple = self.update_occupancy(occup, m, block_num);
+        let result = tuple.1;
+
+        self.x_occupancy |= tuple.0 * ((self.to_move == 1) as u128);
+        self.o_occupancy |= tuple.0 * ((self.to_move != 1) as u128);
 
         self.next_legal = CELL_MASK * (((self.x_occupancy | self.o_occupancy) & (1 << (91 + block_offset)) != 0) as u128);
         self.next_legal |= (0x1FF as u128) << (block_offset * 9);
 
         self.next_legal &= !(self.x_occupancy | self.o_occupancy);
-        //println!("self.next_legal: {:#0130b}", self.next_legal);
+
         self.to_move = -self.to_move;
         return result;
     }
