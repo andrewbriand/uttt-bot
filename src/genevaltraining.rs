@@ -1,13 +1,16 @@
-mod oldmcts;
-use oldmcts::MCTSAI;
+mod mcts;
+use mcts::MCTSAI;
 
 mod bitboard;
 use bitboard::BitBoard;
 
+mod ai;
+use ai::AI;
+
 use std::time::Duration;
 
 fn main() {
-  for i in 0..10 {
+  for i in 0..50000 {
   let mut board = BitBoard::new();
 
   let mut ai1 = MCTSAI::new(1.0);
@@ -15,7 +18,7 @@ fn main() {
   let mut ai2 = MCTSAI::new(1.0);
 
   while board.get_winner() == 0 {
-    let (m, eval) = ai1.get_move(Duration::from_millis(5000));
+    let (m, eval) = ai1.get_move_eval(Duration::from_millis(5000));
     for i in 0..90 {
 	if board.x_occupancy & (1 << i) != 0 {
 	    print!("{} ", 1.0 * (board.to_move as f64));
@@ -51,8 +54,8 @@ fn main() {
     if board.get_winner() != 0 {
       break;
     }
-    let (m, eval) = ai2.get_move(Duration::from_millis(5000));
-    for i in 0..90 {
+    let (m, eval) = ai2.get_move_eval(Duration::from_millis(500));
+    /*for i in 0..90 {
 	if board.x_occupancy & (1 << i) != 0 {
 	    print!("{} ", 1.0 * (board.to_move as f64));
 	} else if board.o_occupancy & (1 << i) != 0 {
@@ -80,7 +83,7 @@ fn main() {
 	}
     }
 
-    println!("{}", eval);
+    println!("{}", eval);*/
     
     board.make_move(1 << m);
     ai1.make_move(m);

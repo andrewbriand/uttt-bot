@@ -4139,7 +4139,7 @@ impl TreeNode {
     }
 }
 
-static rollouts_per_sim: u32 = 5;
+static rollouts_per_sim: u32 = 10;
 
 impl AI for MCTSAI {
     fn get_move(&mut self, x_time: Duration, o_time: Duration) -> i64 {
@@ -4307,6 +4307,72 @@ impl MCTSAI {
             rand: SmallRng::from_entropy(),
             tree: TreeNode::new(BitBoard::new()),
         }
+    }
+
+    pub fn get_move_eval(&mut self, time: Duration) -> (i64, f64) {
+        self.me = self.tree.board.to_move;
+        if self.tree.board.x_occupancy == 0 {
+            let time_remaining = time;
+            self.tree.board.make_move(1 << 40);
+            let before = Instant::now();
+            let mut tree = &mut self.tree;
+            let mut num_rollouts = 0;
+            loop {
+              for _i in 0..10 {
+                  MCTSAI::rollout(tree, self.me, &mut (self.rand), self.exploration);
+              }
+              num_rollouts += 10 * rollouts_per_sim;
+              let duration = Instant::now() - before;
+              if duration > time_remaining {
+                  break;
+              }
+            }
+            //eprintln!("num_rollouts: {}");
+            return (40, 0.0);
+        }
+        let time_remaining;
+        if self.tree.board.o_occupancy == 0 {
+            time_remaining = time;
+        } else {
+            time_remaining = time;
+        }
+        let before = Instant::now();
+        let mut tree = &mut self.tree;
+        let mut num_rollouts = 0;
+        loop {
+          for _i in 0..10 {
+              MCTSAI::rollout(tree, self.me, &mut (self.rand), self.exploration);
+          }
+          num_rollouts += 10 * rollouts_per_sim;
+          let duration = Instant::now() - before;
+          if duration > time_remaining {
+              break;
+          }
+        }
+        let mut best_count = 0;
+        let mut best_move = 82;
+        let mut best_reward = -1.0;
+        let mut best_index = 0;
+        let mut index = 0;
+        BitBoard::iterate_moves(tree.board.get_moves(), &mut |m: u128, _sf: i64| {
+            let node = &tree.children[index];
+            let m = _sf;
+            if node.sim_count > best_count {
+                best_count = node.sim_count;
+                best_move = m;
+                best_index = index;
+                best_reward = node.avg_reward;
+            }
+            index += 1;
+            return true;
+        });
+        eprintln!("num_rollouts: {}", num_rollouts);
+        eprintln!("best_reward: {}", best_reward);
+        eprintln!("best_count: {}", best_count);
+        self.board.make_move(1 << best_move);
+        self.tree = self.tree.children.remove(best_index);
+
+        return (best_move as i64, best_reward);
     }
 
     fn eval(board: &mut BitBoard, me: i8) -> i32 {

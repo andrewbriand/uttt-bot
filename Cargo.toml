@@ -32,3 +32,7 @@ path = "src/simd_test.rs"
 [[bin]]
 name = "profile"
 path = "src/profile.rs"
+
+[[bin]]
+name = "geneval"
+path = "src/genevaltraining.rs"
